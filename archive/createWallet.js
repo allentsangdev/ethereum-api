@@ -1,5 +1,5 @@
 // Importing Config file
-const Config = require(".././config");
+const Config = require("../config");
 // Adding web3.js into project
 const Web3 = require("web3");
 // Create web3 instance
