@@ -1,5 +1,3 @@
-const {addAccountToWallet} = require('./modules/addAccountToWallet')
-const {createAccount} = require('./modules/createAccount')
 const {createHdWallet} = require('./modules/createHdWallet')
 const {transfer} = require('./modules/transfer')
 const express = require('express')
@@ -28,9 +26,20 @@ router.post('/wallet/create', async (req,res) => {
     catch(error) {
         res.status(500).send(error.message)
     }
-    
 })
 
+// GET Request: Recover a wallet
+router.get('/wallet/import/:seedphrase', async (req,res) => {
+    try {
+        const seedPhrase = req.params.seedphrase
+        const wallet = await importHdWallet(seedPhrase)
+        console.log(wallet)
+        res.status(200).json(wallet)
+    } 
+    catch(error) {
+        res.status(500).send(error.message)
+    }
+})
 
 
 

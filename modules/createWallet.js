@@ -1,12 +1,11 @@
-const Config = require(".././config");
 const { ethers } = require('ethers');
 
 // Use the provider for the local Ganache instance
-const provider = new ethers.providers.JsonRpcProvider(Config.networkProvider);
+const provider = new ethers.providers.JsonRpcProvider('http://localhost:7545');
 
-async function importWallet(seedPhrase) {
-  // Create a Wallet instance with the provided mnemonic
-  const wallet = ethers.Wallet.fromMnemonic(seedPhrase)
+async function createWallet() {
+  // Use the provider for the local Ganache instance
+  const wallet = ethers.Wallet.createRandom().connect(provider);
 
   // Extract the seed phrase, account private key, public address, and the signTransaction function from the "Etherjs Wallet" instance
   const mnemonic = wallet.mnemonic.phrase;
@@ -24,14 +23,22 @@ async function importWallet(seedPhrase) {
 }
 
 module.exports = {
-  importWallet
+  createWallet
 }
 
 /* Example usage
-const mnemonic = 'stumble bean velvet aspect ocean come tuition lyrics cave weird warm dust'
-importWallet(mnemonic).then((results) => {
-  console.log(results);
+createWallet().then((result) => {
+  console.log(result);
 }).catch((error) => {
   console.error(error);
 });
+*/
+
+/* Wallet Instance Created with EtherJs
+{
+  mnemonic: 'bench ski orbit device theme trap asthma claw mango ordinary hour such',
+  privateKey: '0x0597f731edf9c0b2373f0290b09bee3a6ad39b37a1202700a82cb921acc672c7',
+  address: '0x6f3f74288ce45e1a1EA1cA3af2747bE4afFCDb95',
+  signTransaction: [Function: bound ]
+}
 */

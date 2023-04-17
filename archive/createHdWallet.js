@@ -1,5 +1,15 @@
+/*
+Requirements:
+1. Create a wallet instance that is associated with an seed phrase,
+   so that user can import wallet to other wallet services with the seed phrase
+2. When wallet being created, one account will be generated and be added to the wallet instance
+3. Able to add other accounts to the wallet
+*/
+
+
+
 const HDWalletProvider = require('@truffle/hdwallet-provider');
-const Config = require(".././config");
+const Config = require("../config");
 const Web3 = require('web3');
 const bip39 = require('bip39');
 
@@ -36,4 +46,4 @@ module.exports = {
     createHdWallet
 }
 
-//const test = createHdWallet().then(console.log)
+const test = createHdWallet().then(console.log)
