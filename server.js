@@ -1,5 +1,5 @@
-const {createHdWallet} = require('./modules/createHdWallet')
-const {transfer} = require('./modules/transfer')
+const {createWallet} = require('./module/createWallet')
+const {importWallet} = require('./module/importWallet')
 const express = require('express')
 const cors = require('cors')
 const app = express()
@@ -19,7 +19,7 @@ router.get("/", (req,res) => {
 // POST Request: Create Wallet Instance
 router.post('/wallet/create', async (req,res) => {
     try {
-        const newWallet = await createHdWallet()
+        const newWallet = await createWallet()
         console.log(newWallet)
         res.status(200).json(newWallet)
     } 
@@ -32,7 +32,7 @@ router.post('/wallet/create', async (req,res) => {
 router.get('/wallet/import/:seedphrase', async (req,res) => {
     try {
         const seedPhrase = req.params.seedphrase
-        const wallet = await importHdWallet(seedPhrase)
+        const wallet = await importWallet(seedPhrase)
         console.log(wallet)
         res.status(200).json(wallet)
     } 
@@ -40,9 +40,6 @@ router.get('/wallet/import/:seedphrase', async (req,res) => {
         res.status(500).send(error.message)
     }
 })
-
-
-
 
 app.use('/', router)
 
