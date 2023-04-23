@@ -1,7 +1,9 @@
+const Config = require(".././config");
+const { utils } = require('ethers');
 const { ethers } = require('ethers');
 
 // Use the provider for the local Ganache instance
-const provider = new ethers.providers.JsonRpcProvider('http://localhost:7545');
+const provider = new ethers.providers.JsonRpcProvider(Config.networkProvider);
 
 async function createWallet() {
   // Use the provider for the local Ganache instance
@@ -12,6 +14,7 @@ async function createWallet() {
   const privateKey = wallet.privateKey;
   const address = wallet.address;
   const signTransaction = wallet.signTransaction.bind(wallet);
+  const sendTransaction = wallet.sendTransaction.bind(wallet);
 
   // Return the extracted info to the function caller
   return {
@@ -19,6 +22,7 @@ async function createWallet() {
     privateKey: privateKey,
     address: address,
     signTransaction: signTransaction ,
+    sendTransaction: sendTransaction ,
   };
 }
 
@@ -42,3 +46,18 @@ createWallet().then((result) => {
   signTransaction: [Function: bound ]
 }
 */
+
+/*const tx = {
+  to: "0x686a0430dec8E9f2473cA97D7A5735047757400F",
+  value: utils.parseEther("0.00007")
+}
+
+async function testCreate() {
+  const newWallet = await createWallet()
+  console.log(newWallet)
+}
+
+testCreate()
+
+*/
+
