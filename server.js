@@ -1,5 +1,5 @@
-const {createWallet} = require('./module/createWallet')
-const {importWallet} = require('./module/importWallet')
+const {createWallet} = require('./modules/createWallet')
+const {importWallet} = require('./modules/importWallet')
 const express = require('express')
 const cors = require('cors')
 const app = express()
