@@ -30,6 +30,14 @@ module.exports = {
   createWallet
 }
 
+// Test Wallet 23 May
+createWallet().then((result) => {
+  console.log(result);
+}).catch((error) => {
+  console.error(error);
+});
+
+
 /* Example usage
 createWallet().then((result) => {
   console.log(result);
