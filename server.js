@@ -8,6 +8,7 @@ const PORT = process.env.port || 4000
 
 // Middlewares
 app.use(cors())
+app.use(express.json())
 
 /* ----- Define Routes ----- */
 
@@ -40,6 +41,25 @@ router.get('/wallet/import/:seedphrase', async (req,res) => {
         res.status(500).send(error.message)
     }
 })
+
+// POST Request: Transaction
+router.post('/wallet/transaction', async (req,res) => {
+    try {
+        const {seedPhrase, destinationAddress, txAmount } = req.body
+        const tx = {
+            to:destinationAddress,
+            value: txAmount
+        }
+        const wallet = await importWallet(seedPhrase)
+        const txReceipt = wallet.sendTransaction(tx)
+        res.status(200).json(txReceipt)
+
+    } 
+    catch(error) {
+        res.status(500).send(error.message)
+    }
+})
+
 
 app.use('/', router)
 
