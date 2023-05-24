@@ -51,7 +51,7 @@ router.post('/wallet/transaction', async (req,res) => {
             value: txAmount
         }
         const wallet = await importWallet(seedPhrase)
-        const txReceipt = wallet.sendTransaction(tx)
+        const txReceipt = await wallet.sendTransaction(tx)
         res.status(200).json(txReceipt)
 
     } 
