@@ -1,5 +1,6 @@
 const {createWallet} = require('./modules/createWallet')
 const {importWallet} = require('./modules/importWallet')
+const { utils } = require('ethers');
 const express = require('express')
 const cors = require('cors')
 const app = express()
@@ -48,7 +49,7 @@ router.post('/wallet/transaction', async (req,res) => {
         const {seedPhrase, destinationAddress, txAmount } = req.body
         const tx = {
             to:destinationAddress,
-            value: txAmount
+            value: utils.parseEther(txAmount)
         }
         const wallet = await importWallet(seedPhrase)
         const txReceipt = await wallet.sendTransaction(tx)
@@ -59,7 +60,6 @@ router.post('/wallet/transaction', async (req,res) => {
         res.status(500).send(error.message)
     }
 })
-
 
 app.use('/', router)
 
