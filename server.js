@@ -1,5 +1,6 @@
 const {createWallet} = require('./modules/createWallet')
 const {importWallet} = require('./modules/importWallet')
+const {getEthBalance} = require('./modules/getEthBalance')
 const { utils } = require('ethers');
 const express = require('express')
 const cors = require('cors')
@@ -54,6 +55,19 @@ router.post('/wallet/transaction', async (req,res) => {
         const wallet = await importWallet(seedPhrase)
         const txReceipt = await wallet.sendTransaction(tx)
         res.status(200).json(txReceipt)
+
+    } 
+    catch(error) {
+        res.status(500).send(error.message)
+    }
+})
+
+// POST Request: Get ETH Balance of a address
+router.post('/wallet/getEthBalance', async (req,res) => {
+    try {
+        const {address} = req.body
+        const ethBalance = await getEthBalance(address)
+        res.status(200).json(ethBalance)
 
     } 
     catch(error) {
