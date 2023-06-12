@@ -24,7 +24,6 @@ router.get("/", (req,res) => {
 router.post('/wallet/create', async (req,res) => {
     try {
         const newWallet = await createWallet()
-        console.log(newWallet)
         res.status(200).json(newWallet)
     } 
     catch(error) {
@@ -37,7 +36,6 @@ router.get('/wallet/import/:seedphrase', async (req,res) => {
     try {
         const seedPhrase = req.params.seedphrase
         const wallet = await importWallet(seedPhrase)
-        console.log(wallet)
         res.status(200).json(wallet)
     } 
     catch(error) {
