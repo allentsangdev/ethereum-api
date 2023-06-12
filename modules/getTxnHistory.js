@@ -7,7 +7,7 @@ const etherscanApiKey = process.env.ETHERSCAN_API_KEY;
 
 // Get a list of 'Normal' Transactions By Address
 
-const getTxnHistoty = async (address) => {
+const getTxnHistory = async (address) => {
     const endpoint = `https://api-sepolia.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=10&sort=asc&apikey=${etherscanApiKey}`;
 
     const response = await fetch(endpoint);
@@ -17,7 +17,7 @@ const getTxnHistoty = async (address) => {
 };
 
 module.exports = {
-    getTxnHistoty
+    getTxnHistory
   }
 
 //let address = "0x686a0430dec8E9f2473cA97D7A5735047757400F";
