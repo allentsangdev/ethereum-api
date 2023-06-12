@@ -14,7 +14,7 @@ const getTxnHistory = async (address) => {
     const response = await axios.get(endpoint);
     const history =  response.data;
 
-    return console.log(history) ;
+    return history ;
 };
 
 module.exports = {
