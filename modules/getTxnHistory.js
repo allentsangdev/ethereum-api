@@ -1,3 +1,4 @@
+import fetch from  "node-fetch"
 const etherscanEndpoints = {
     mainnet: "https://api.etherscan.io/",
     goerli: "https://api-goerli.etherscan.io/",
