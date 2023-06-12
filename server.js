@@ -1,6 +1,7 @@
 const {createWallet} = require('./modules/createWallet')
 const {importWallet} = require('./modules/importWallet')
 const {getEthBalance} = require('./modules/getEthBalance')
+const { getTxnHistory } = require('./modules/getTxnHistory')
 const { utils } = require('ethers');
 const express = require('express')
 const cors = require('cors')
@@ -69,6 +70,18 @@ router.post('/wallet/getEthBalance', async (req,res) => {
         const ethBalance = await getEthBalance(address)
         res.status(200).json(ethBalance)
 
+    } 
+    catch(error) {
+        res.status(500).send(error.message)
+    }
+})
+
+// GET Request: Get Transaction History by Address
+router.get('/wallet-tools/txn-history/:address', async (req,res) => {
+    try {
+        const address = req.params.address
+        const history = await getTxnHistory(address)
+        res.status(200).json(history)
     } 
     catch(error) {
         res.status(500).send(error.message)
