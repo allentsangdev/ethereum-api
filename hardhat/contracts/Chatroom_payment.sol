@@ -2,25 +2,31 @@
 pragma solidity ^0.8.17;
 
 contract Chat_Payment {
-
-    // ------------------------------- Data Structure ------------------------------- //
+    // ------------------------------- Data Structures ------------------------------- //
     struct User {
         address userAddress;
-        uint balance;
+        uint256 balance;
     }
 
-    enum PaymentRequestState {Open, Rejected, Completed}
-    enum PaymentRequestDecision {Accept, Reject}
+    enum PaymentRequestState {
+        Open,
+        Rejected,
+        Completed
+    }
+    enum PaymentRequestDecision {
+        Accept,
+        Reject
+    }
 
     struct PaymentRequest {
-        uint paymentRequestId;
+        uint256 paymentRequestId;
         address payable fundReceiver;
-        uint txAmount;
+        uint256 txAmount; // Transaction amount is in Ether instead of Wei
         PaymentRequestState paymentRequestState;
     }
 
-    // ------------------------------- State variables ------------------------------- //
-    
+    // ------------------------------- State Variables ------------------------------- //
+
     // a list of User struct to keep track of registered users
     User[] userList;
 
@@ -29,74 +35,92 @@ contract Chat_Payment {
 
     // ------------------------------- Functions ------------------------------- //
     function registerAsUser() public {
-        userList.push(
-            User({
-                userAddress: msg.sender,
-                balance: 0
-        })
-        );
+        userList.push(User({userAddress: msg.sender, balance: 0}));
     }
 
-    function topUpAccount() payable public  {
+    function getAllUser() public view returns (User[] memory) {
+        return userList;
+    }
+
+    function topUpAccount() public payable {
         // find the user account first
-        for (uint i = 0; i < userList.length; i++ ) {
-            if(userList[i].userAddress == msg.sender) {
+        for (uint256 i = 0; i < userList.length; i++) {
+            if (userList[i].userAddress == msg.sender) {
                 userList[i].balance += msg.value;
             }
         }
     }
 
-    function initiatePaymentRequest(uint _txAmount) public {
+    // Please provide _txAmount in unit of Ether NOT Wei!
+    function initiatePaymentRequest(uint256 _txAmount) public {
         paymentRequestList.push(
             PaymentRequest({
                 paymentRequestId: paymentRequestList.length,
                 fundReceiver: payable(msg.sender),
-                txAmount: _txAmount,
+                txAmount: (_txAmount * 1 ether),
                 paymentRequestState: PaymentRequestState.Open
             })
         );
     }
 
-    function getPaymentRequest(uint _paymentRequestId) public view returns(PaymentRequest memory targetPaymentRequest) {
-        for (uint i = 0; i < paymentRequestList.length; i++ ) {
-            if(paymentRequestList[i].paymentRequestId == _paymentRequestId) {
+    function getAllPaymentRequest()
+        public
+        view
+        returns (PaymentRequest[] memory)
+    {
+        return paymentRequestList;
+    }
+
+    function getPaymentRequest(uint256 _paymentRequestId)
+        public
+        view
+        returns (PaymentRequest memory targetPaymentRequest)
+    {
+        for (uint256 i = 0; i < paymentRequestList.length; i++) {
+            if (paymentRequestList[i].paymentRequestId == _paymentRequestId) {
                 return paymentRequestList[i];
             }
         }
     }
 
-    function handlePaymentRequest(uint _paymentRequestId, PaymentRequestDecision _paymentRequestDecision) payable public {
-        PaymentRequest memory targetPaymentRequest  = getPaymentRequest(_paymentRequestId);
+    function handlePaymentRequest(
+        uint256 _paymentRequestId,
+        PaymentRequestDecision _paymentRequestDecision
+    ) public payable {
+        PaymentRequest memory targetPaymentRequest = getPaymentRequest(
+            _paymentRequestId
+        );
         if (_paymentRequestDecision == PaymentRequestDecision.Accept) {
             // handle transaction
-            targetPaymentRequest.fundReceiver.transfer(targetPaymentRequest.txAmount);
-            // update state variable - PaymentRequestState to complete after successful txn
-            // using for loop to locate target struct as we need to update the state variable
+            targetPaymentRequest.fundReceiver.transfer(
+                targetPaymentRequest.txAmount
+            );
+            // update state variable - PaymentRequestState to "Completed" after successful txn
+            // using for loop to locate target struct instead of using getPaymentRequest as we need to update the state variable
             // using getPaymentRequest can only update memory variable
-            for (uint i = 0; i < paymentRequestList.length; i++ ) {
-            if(paymentRequestList[i].paymentRequestId == _paymentRequestId) {
-                paymentRequestList[i].paymentRequestState = PaymentRequestState.Completed;
+            for (uint256 i = 0; i < paymentRequestList.length; i++) {
+                if (
+                    paymentRequestList[i].paymentRequestId == _paymentRequestId
+                ) {
+                    paymentRequestList[i]
+                        .paymentRequestState = PaymentRequestState.Completed;
+                }
             }
-        }
 
-        if (_paymentRequestDecision == PaymentRequestDecision.Reject) {
-            // update paymentRequestState to rejected after rejecting txn
-            for (uint i = 0; i < paymentRequestList.length; i++ ) {
-            if(paymentRequestList[i].paymentRequestId == _paymentRequestId) {
-                paymentRequestList[i].paymentRequestState = PaymentRequestState.Rejected;
+            if (_paymentRequestDecision == PaymentRequestDecision.Reject) {
+                // update paymentRequestState to rejected after rejecting txn
+                for (uint256 i = 0; i < paymentRequestList.length; i++) {
+                    if (
+                        paymentRequestList[i].paymentRequestId ==
+                        _paymentRequestId
+                    ) {
+                        paymentRequestList[i]
+                            .paymentRequestState = PaymentRequestState.Rejected;
+                    }
+                }
             }
+
+            // ------------------------------- Modifiers ------------------------------- //
         }
     }
-
-    // ------------------------------- Modifiers ------------------------------- //
-
-
-
-
-
-
-
-
-
-
-}}}
+}
