@@ -4,7 +4,7 @@ require("dotenv").config()
 require("@nomiclabs/hardhat-ethers")
  
 module.exports = {
-  solidity: "0.8.6",
+  solidity: "0.8.17",
   paths: {
     artifacts: './src/artifacts',
   },
@@ -12,7 +12,7 @@ module.exports = {
     fuji: {
       url: process.env.ETHNODE_URL,
       accounts: [`0x` + process.env.PRIVATE_KEY],
-      chainId: 43113, // update the chainId to your Ethereum's ID
+      chainId: 11155111., // update the chainId to your Ethereum's ID
     },
   },
 }
