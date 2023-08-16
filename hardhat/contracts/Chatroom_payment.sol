@@ -13,29 +13,38 @@ contract Chat_Payment {
         Rejected,
         Completed
     }
-    enum PaymentRequestDecision {
-        Accept,
-        Reject
-    }
 
     struct PaymentRequest {
         uint256 paymentRequestId;
         address payable fundReceiver;
-        uint256 txAmount; // Transaction amount is in Ether instead of Wei
+        uint256 txAmount;
+        string room;
+        string currency;
         PaymentRequestState paymentRequestState;
+    }
+
+    struct Escrow {
+        uint256 escrowId;
+        uint256 paymentRequestId;
+        address fundReceiver;
+        uint256 amount;
+        bool isWithdrawn;
+        uint256 releaseTime;
+        string room;
     }
 
     // ------------------------------- State Variables ------------------------------- //
 
-    // a list of User struct to keep track of registered users
     User[] userList;
-
-    // a list of PaymentRequest struct to keep track of initialed paymnent requests
     PaymentRequest[] paymentRequestList;
+    Escrow[] escrowList;
+
+    uint256 constant FEE_PERCENT = 125; // 1.25%
 
     // ------------------------------- Functions ------------------------------- //
-    function registerAsUser() public {
-        userList.push(User({userAddress: msg.sender, balance: 0}));
+
+    function registerAsUser(address userAddress) public {
+        userList.push(User({userAddress: userAddress, balance: 0}));
     }
 
     function getAllUser() public view returns (User[] memory) {
@@ -43,7 +52,6 @@ contract Chat_Payment {
     }
 
     function topUpAccount() public payable {
-        // find the user account first
         for (uint256 i = 0; i < userList.length; i++) {
             if (userList[i].userAddress == msg.sender) {
                 userList[i].balance += msg.value;
@@ -51,76 +59,198 @@ contract Chat_Payment {
         }
     }
 
-    // Please provide _txAmount in unit of Ether NOT Wei!
-    function initiatePaymentRequest(uint256 _txAmount) public {
+    function initiatePaymentRequest(
+        uint256 _txAmount,
+        address _txReceiver,
+        string memory room,
+        string memory currency
+    ) public payable {
+        require(msg.value == _txAmount * 1 ether, "Sent value must match the transaction amount");
+
         paymentRequestList.push(
             PaymentRequest({
                 paymentRequestId: paymentRequestList.length,
-                fundReceiver: payable(msg.sender),
-                txAmount: (_txAmount * 1 ether),
+                fundReceiver: payable(_txReceiver),
+                txAmount: (msg.value),
+                room: room,
+                currency: currency,
                 paymentRequestState: PaymentRequestState.Open
             })
         );
     }
 
-    function getAllPaymentRequest()
-        public
-        view
-        returns (PaymentRequest[] memory)
-    {
-        return paymentRequestList;
-    }
+    function acceptPaymentRequest(address _senderAddress, string memory _room) public payable {
+        require(msg.value == 0, "Accepting a payment request does not require sending additional funds");
 
-    function getPaymentRequest(uint256 _paymentRequestId)
-        public
-        view
-        returns (PaymentRequest memory targetPaymentRequest)
-    {
         for (uint256 i = 0; i < paymentRequestList.length; i++) {
-            if (paymentRequestList[i].paymentRequestId == _paymentRequestId) {
-                return paymentRequestList[i];
+            if (
+                paymentRequestList[i].fundReceiver == _senderAddress &&
+                keccak256(bytes(paymentRequestList[i].room)) == keccak256(bytes(_room)) &&
+                paymentRequestList[i].paymentRequestState == PaymentRequestState.Open
+            ) {
+                uint256 feeAmount = (paymentRequestList[i].txAmount * FEE_PERCENT) / 10000;
+                uint256 amountAfterFee = paymentRequestList[i].txAmount - feeAmount;
+
+                escrowList.push(
+                    Escrow({
+                        escrowId: escrowList.length,
+                        paymentRequestId: i,
+                        fundReceiver: _senderAddress,
+                        amount: amountAfterFee,
+                        isWithdrawn: false,
+                        releaseTime: block.timestamp,
+                        room: _room
+                    })
+                );
+
+                paymentRequestList[i].paymentRequestState = PaymentRequestState.Completed;
+                return;
             }
         }
+        revert("Matching payment request not found");
     }
 
-    function handlePaymentRequest(
-        uint256 _paymentRequestId,
-        PaymentRequestDecision _paymentRequestDecision
+    function initiateConditionalPayment(
+        uint256 _txAmount,
+        address _txReceiver,
+        string memory room,
+        string memory currency,
+        uint256 _durationInSeconds
     ) public payable {
-        PaymentRequest memory targetPaymentRequest = getPaymentRequest(
-            _paymentRequestId
+        require(msg.value == _txAmount * 1 ether, "Sent value must match the transaction amount");
+
+        paymentRequestList.push(
+            PaymentRequest({
+                paymentRequestId: paymentRequestList.length,
+                fundReceiver: payable(_txReceiver),
+                txAmount: (msg.value),
+                room: room,
+                currency: currency,
+                paymentRequestState: PaymentRequestState.Open
+            })
         );
-        if (_paymentRequestDecision == PaymentRequestDecision.Accept) {
-            // handle transaction
-            targetPaymentRequest.fundReceiver.transfer(
-                targetPaymentRequest.txAmount
-            );
-            // update state variable - PaymentRequestState to "Completed" after successful txn
-            // using for loop to locate target struct instead of using getPaymentRequest as we need to update the state variable
-            // using getPaymentRequest can only update memory variable
-            for (uint256 i = 0; i < paymentRequestList.length; i++) {
-                if (
-                    paymentRequestList[i].paymentRequestId == _paymentRequestId
-                ) {
-                    paymentRequestList[i]
-                        .paymentRequestState = PaymentRequestState.Completed;
-                }
-            }
 
-            if (_paymentRequestDecision == PaymentRequestDecision.Reject) {
-                // update paymentRequestState to rejected after rejecting txn
-                for (uint256 i = 0; i < paymentRequestList.length; i++) {
-                    if (
-                        paymentRequestList[i].paymentRequestId ==
-                        _paymentRequestId
-                    ) {
-                        paymentRequestList[i]
-                            .paymentRequestState = PaymentRequestState.Rejected;
-                    }
-                }
-            }
+        uint256 paymentRequestId = paymentRequestList.length - 1;
+        uint256 releaseTime = block.timestamp + _durationInSeconds;
 
-            // ------------------------------- Modifiers ------------------------------- //
+        escrowList.push(
+            Escrow({
+                escrowId: escrowList.length,
+                paymentRequestId: paymentRequestId,
+                fundReceiver: _txReceiver,
+                amount: _txAmount,
+                isWithdrawn: false,
+                releaseTime: releaseTime,
+                room: room
+            })
+        );
+    }
+
+    function cancelConditionalPayment(string memory _room, address _senderAddress) public {
+    for (uint256 i = 0; i < escrowList.length; i++) {
+        Escrow storage escrow = escrowList[i];
+
+        if (
+            escrow.fundReceiver == _senderAddress &&
+            keccak256(bytes(escrow.room)) == keccak256(bytes(_room)) &&
+            escrow.isWithdrawn == false
+        ) {
+            escrow.isWithdrawn = true;
+            paymentRequestList[escrow.paymentRequestId].paymentRequestState = PaymentRequestState.Rejected;
+            return;
         }
+    }
+    revert("Matching conditional payment not found");
+}
+
+
+    function withdraw() public {
+        for (uint256 i = 0; i < escrowList.length; i++) {
+            if (
+                escrowList[i].fundReceiver == msg.sender &&
+                escrowList[i].isWithdrawn == false
+            ) {
+                escrowList[i].isWithdrawn = true;
+                userList[getUserIndex(msg.sender)].balance += escrowList[i].amount;
+                return;
+            }
+        }
+        revert("No funds available for withdrawal");
+    }
+
+    function getUserIndex(address _userAddress) internal view returns (uint256) {
+        for (uint256 i = 0; i < userList.length; i++) {
+            if (userList[i].userAddress == _userAddress) {
+                return i;
+            }
+        }
+        revert("User not found");
+    }
+
+    function acceptConditionalPayment(address _senderAddress, string memory _room) public payable {
+        require(msg.value == 0, "Accepting a conditional payment does not require sending additional funds");
+
+        for (uint256 i = 0; i < escrowList.length; i++) {
+            Escrow storage escrow = escrowList[i];
+
+            if (
+                escrow.fundReceiver == msg.sender &&
+                escrow.releaseTime <= block.timestamp &&
+                keccak256(bytes(escrow.room)) == keccak256(bytes(_room)) &&
+                escrow.isWithdrawn == false
+            ) {
+                uint256 paymentRequestId = escrow.paymentRequestId;
+
+                require(
+                    paymentRequestId < paymentRequestList.length,
+                    "Invalid payment request ID"
+                );
+                require(
+                    paymentRequestList[paymentRequestId].fundReceiver == _senderAddress,
+                    "Sender address does not match the payment request"
+                );
+                require(
+                    keccak256(bytes(paymentRequestList[paymentRequestId].room)) == keccak256(bytes(_room)),
+                    "Room does not match the payment request"
+                );
+                require(
+                    paymentRequestList[paymentRequestId].paymentRequestState == PaymentRequestState.Open,
+                    "Payment request is not open"
+                );
+
+                uint256 feeAmount = (escrow.amount * FEE_PERCENT) / 10000;
+                uint256 amountAfterFee = escrow.amount - feeAmount;
+
+                escrow.isWithdrawn = true;
+                userList[getUserIndex(msg.sender)].balance += amountAfterFee;
+
+                paymentRequestList[paymentRequestId].paymentRequestState = PaymentRequestState.Completed;
+                return;
+            }
+        }
+        revert("Matching conditional payment not found");
+    }
+
+    function withdrawToExternalAddress(uint256 _amount, address payable _externalAddress) public {
+        require(_amount > 0, "Amount must be greater than 0");
+        require(userList[getUserIndex(msg.sender)].balance >= _amount, "Insufficient balance");
+
+        userList[getUserIndex(msg.sender)].balance -= _amount;
+        _externalAddress.transfer(_amount);
+    }
+    
+    function checkPaymentRequest(address _receiverAddress) public view returns (bool exists, uint256 balance) {
+        uint256 totalBalance = 0;
+
+        for (uint256 i = 0; i < paymentRequestList.length; i++) {
+            if (
+                paymentRequestList[i].fundReceiver == _receiverAddress &&
+                paymentRequestList[i].paymentRequestState == PaymentRequestState.Open
+            ) {
+                totalBalance += paymentRequestList[i].txAmount;
+            }
+        }
+
+        return (totalBalance > 0, totalBalance);
     }
 }
