@@ -60,12 +60,11 @@ contract Chat_Payment {
     }
 
     function initiatePaymentRequest(
-        uint256 _txAmount,
         address _txReceiver,
         string memory room,
         string memory currency
     ) public payable {
-        require(msg.value == _txAmount * 1 ether, "Sent value must match the transaction amount");
+        // require(msg.value == _txAmount * 1 ether, "Sent value must match the transaction amount");
 
         paymentRequestList.push(
             PaymentRequest({
@@ -111,13 +110,12 @@ contract Chat_Payment {
     }
 
     function initiateConditionalPayment(
-        uint256 _txAmount,
         address _txReceiver,
         string memory room,
         string memory currency,
         uint256 _durationInSeconds
     ) public payable {
-        require(msg.value == _txAmount * 1 ether, "Sent value must match the transaction amount");
+        // require(msg.value == _txAmount * 1 ether, "Sent value must match the transaction amount");
 
         paymentRequestList.push(
             PaymentRequest({
@@ -138,7 +136,7 @@ contract Chat_Payment {
                 escrowId: escrowList.length,
                 paymentRequestId: paymentRequestId,
                 fundReceiver: _txReceiver,
-                amount: _txAmount,
+                amount: msg.value,
                 isWithdrawn: false,
                 releaseTime: releaseTime,
                 room: room
